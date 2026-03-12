@@ -1,0 +1,57 @@
+#+title: Learn5
+
+#+PROPERTY: header-args:python :session learn5 :async
+
+* Learning part 5 - Model evaluation using cross validation
+** Set up
+#+begin_src python :results none
+import openml
+from sklearn.model_selection import train_test_split
+
+DATASET_ID = 1590
+
+openml.datasets.list_datasets(output_format="dataframe")
+dataset = openml.datasets.get_dataset(DATASET_ID)
+
+df, _, _, _ = dataset.get_data(dataset_format="dataframe")
+df = df.drop(columns=["education-num"])
+
+X, y = df.drop(columns=["class"]), df["class"]
+
+numerical_columns = ["age", "capital-gain", "capital-loss", "hours-per-week"]
+X = X[numerical_columns]
+
+X_train, X_test, y_train, y_test = train_test_split(
+    X, y, random_state = 42, test_size=0.25
+)
+#+end_src
+
+#+begin_src python :results none
+from sklearn.preprocessing import StandardScaler
+from sklearn.linear_model import LogisticRegression
+from sklearn.pipeline import make_pipeline
+#+end_src
+
+**  ?
+#+begin_src python
+from sklearn.model_selection import cross_validate
+model = make_pipeline(StandardScaler(), LogisticRegression())
+cv_result = cross_validate(model, X, y, cv=5)
+
+f"fit_time:   {cv_result['fit_time']}\n" + \
+f"score_time: {cv_result['score_time']}\n" + \
+f"test_score: {cv_result['test_score']}"
+#+end_src
+
+#+RESULTS:
+: fit_time:   [0.05119061 0.07973313 0.08094692 0.07877541 0.05987   ]
+: score_time: [0.01942277 0.0195775  0.01946044 0.01963568 0.0118196 ]
+: test_score: [0.79557785 0.80049135 0.79965192 0.79873055 0.80456593]
+
+#+begin_src python
+scores = cv_result['test_score']
+f"The mean cross_validation accuracy is : {scores.mean():.3f} +- {scores.std():.3f}"
+#+end_src
+
+#+RESULTS:
+: /tmp/babel-zLwnPb/python-ILk8Wu

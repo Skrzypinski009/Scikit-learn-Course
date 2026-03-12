@@ -1,0 +1,60 @@
+#+title: Exercise1
+
+#+PROPERTY: header-args:python :session ex1 :async
+
+#+begin_src python
+import pandas as pd
+df = pd.read_csv("datasets/penguins_classification.csv")
+df.head()
+#+end_src
+
+#+RESULTS:
+:    Culmen Length (mm)  Culmen Depth (mm) Species
+: 0                39.1               18.7  Adelie
+: 1                39.5               17.4  Adelie
+: 2                40.3               18.0  Adelie
+: 3                36.7               19.3  Adelie
+: 4                39.3               20.6  Adelie
+
+#+begin_src python
+df.dtypes
+#+end_src
+
+#+RESULTS:
+: Culmen Length (mm)    float64
+: Culmen Depth (mm)     float64
+: Species                   str
+: dtype: object
+
+One categorical, two numerical
+
+#+begin_src python
+df['Species'].value_counts()
+#+end_src
+
+#+RESULTS:
+: Species
+: Adelie       151
+: Gentoo       123
+: Chinstrap     68
+: Name: count, dtype: int64
+
+#+begin_src python :results graphics file :file ../img/ex1_plot1.png
+import matplotlib.pyplot as plt
+
+numerical = ["Culmen Length (mm)", "Culmen Depth (mm)"]
+df_num = df[numerical].hist()
+plt.gcf()
+#+end_src
+
+#+begin_src python :results graphics file :file ../img/ex1_plot2.png
+import seaborn as sns
+columns = numerical
+plt.clf()
+sns.pairplot(
+    data=df,
+    hue = "Species",
+    height=3,
+)
+plt.gcf()
+#+end_src

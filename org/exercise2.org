@@ -1,0 +1,78 @@
+#+title: Exercise2
+
+#+PROPERTY: header-args:python :session ex2 :async
+
+** Setup
+#+begin_src python
+import pandas as pd
+import openml
+
+DATASET_ID = 1590
+
+openml.datasets.list_datasets(output_format="dataframe")
+dataset = openml.datasets.get_dataset(DATASET_ID)
+adult_census, _, _, _ = dataset.get_data(dataset_format="dataframe")
+adult_census = adult_census[['age', 'capital-gain', 'capital-loss', 'hours-per-week', 'class']]
+target_name = "class"
+X = adult_census.drop(columns=[target_name])
+y = adult_census["class"]
+#+end_src
+
+#+RESULTS:
+: None
+
+** Creating model
+#+begin_src python
+from sklearn.neighbors import KNeighborsClassifier
+model = KNeighborsClassifier(n_neighbors=50)
+#+end_src
+
+#+RESULTS:
+: None
+
+** Training
+#+begin_src python
+model.fit(X, y)
+#+end_src
+
+#+RESULTS:
+: KNeighborsClassifier(n_neighbors=50)
+
+** Predictions
+#+begin_src python
+prediction = model.predict(X[:10])
+
+f"{(prediction == y[:10]).sum()} / 10"
+#+end_src
+
+#+RESULTS:
+: 9 / 10
+
+** Accuracy
+#+begin_src python
+accuracy = model.score(X, y)
+accuracy
+#+end_src
+
+#+RESULTS:
+: 0.8300028663854879
+
+** Accuracy on splitted data
+#+begin_src python
+fraction = 0.7
+n_train = int(X.shape[0] * fraction)
+
+X_train = X[:n_train]
+y_train = y[:n_train]
+
+X_test = X[n_train:]
+y_test = y[n_train:]
+
+model = KNeighborsClassifier(n_neighbors=50)
+model.fit(X_train, y_train)
+accuracy = model.score(X_test, y_test)
+accuracy
+#+end_src
+
+#+RESULTS:
+: 0.8251552583088787

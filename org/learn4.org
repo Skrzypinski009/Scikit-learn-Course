@@ -1,0 +1,229 @@
+#+title: Learn4
+
+#+PROPERTY: header-args:python :session learn4 :async
+
+* Learning part 4 - StandardScaler and Pipeline
+** Set up
+#+begin_src python
+import openml
+from sklearn.model_selection import train_test_split
+
+DATASET_ID = 1590
+
+openml.datasets.list_datasets(output_format="dataframe")
+dataset = openml.datasets.get_dataset(DATASET_ID)
+
+df, _, _, _ = dataset.get_data(dataset_format="dataframe")
+df = df.drop(columns=["education-num"])
+
+X, y = df.drop(columns=["class"]), df["class"]
+
+numerical_columns = ["age", "capital-gain", "capital-loss", "hours-per-week"]
+X = X[numerical_columns]
+
+X_train, X_test, y_train, y_test = train_test_split(
+    X, y, random_state = 42, test_size=0.25
+)
+#+end_src
+
+#+RESULTS:
+: None
+
+#+begin_src python
+X_train.describe()
+#+end_src
+
+#+RESULTS:
+:                 age  capital-gain  capital-loss  hours-per-week
+: count  36631.000000  36631.000000  36631.000000    36631.000000
+: mean      38.642352   1087.077721     89.665311       40.431247
+: std       13.725748   7522.692939    407.110175       12.423952
+: min       17.000000      0.000000      0.000000        1.000000
+: 25%       28.000000      0.000000      0.000000       40.000000
+: 50%       37.000000      0.000000      0.000000       40.000000
+: 75%       48.000000      0.000000      0.000000       45.000000
+: max       90.000000  99999.000000   4356.000000       99.000000
+
+** StandardScaler
+ *It is one of the transformers, that will normalize the data*
+
+#+begin_src python :results none
+from sklearn.preprocessing import StandardScaler
+
+scaler = StandardScaler()
+scaler.fit(X_train)
+#+end_src
+
+*** Fitting results
+#+begin_src python
+f"Mean: {scaler.mean_}\n" + \
+f"Scale: {scaler.scale_}"
+#+end_src
+
+#+RESULTS:
+: Mean: [  38.64235211 1087.07772106   89.6653108    40.43124676]
+: Scale: [  13.72556083 7522.59025606  407.10461772   12.42378265]
+
+*** Transform
+#+begin_src python
+X_train_scaled = scaler.transform(X_train)
+X_train_scaled
+#+end_src
+
+#+RESULTS:
+: array([[ 0.17177061, -0.14450843,  5.71188483, -2.28845333],
+:        [ 0.02605707, -0.14450843, -0.22025127, -0.27618374],
+:        [-0.33822677, -0.14450843, -0.22025127,  0.77019645],
+:        ...,
+:        [-0.77536738, -0.14450843, -0.22025127, -0.03471139],
+:        [ 0.53605445, -0.14450843, -0.22025127, -0.03471139],
+:        [ 1.48319243, -0.14450843, -0.22025127, -2.69090725]],
+:       shape=(36631, 4))
+
+
+/An option to make fit and transform in one step/
+#+begin_src python
+data_train_scaled = scaler.fit_transform(X_train)
+data_train_scaled
+#+end_src
+
+#+RESULTS:
+: array([[ 0.17177061, -0.14450843,  5.71188483, -2.28845333],
+:        [ 0.02605707, -0.14450843, -0.22025127, -0.27618374],
+:        [-0.33822677, -0.14450843, -0.22025127,  0.77019645],
+:        ...,
+:        [-0.77536738, -0.14450843, -0.22025127, -0.03471139],
+:        [ 0.53605445, -0.14450843, -0.22025127, -0.03471139],
+:        [ 1.48319243, -0.14450843, -0.22025127, -2.69090725]],
+:       shape=(36631, 4))
+
+*** Details
+#+begin_src python
+scaler = StandardScaler().set_output(transform="pandas")
+X_train_scaled = scaler.fit_transform(X_train)
+X_train_scaled.describe()
+#+end_src
+
+#+RESULTS:
+:                 age  capital-gain  capital-loss  hours-per-week
+: count  3.663100e+04  3.663100e+04  3.663100e+04    3.663100e+04
+: mean  -2.246208e-16  1.823347e-17 -4.422586e-17    1.788432e-16
+: std    1.000014e+00  1.000014e+00  1.000014e+00    1.000014e+00
+: min   -1.576792e+00 -1.445084e-01 -2.202513e-01   -3.173852e+00
+: 25%   -7.753674e-01 -1.445084e-01 -2.202513e-01   -3.471139e-02
+: 50%   -1.196565e-01 -1.445084e-01 -2.202513e-01   -3.471139e-02
+: 75%    6.817680e-01 -1.445084e-01 -2.202513e-01    3.677425e-01
+: max    3.741752e+00  1.314865e+01  1.047970e+01    4.714245e+00
+
+*** Visualization difference (before and after)
+#+begin_src python :results none
+import matplotlib.pyplot as plt
+import seaborn as sns
+#+end_src
+
+#+begin_src python :results none
+n_points= 300
+#+end_src
+
+*Before the normalization*
+#+begin_src python :results graphics file :file ../img/learn4_plot1.png
+plt.clf()
+sns.jointplot(
+    data=X_train[:n_points],
+    x="age",
+    y="hours-per-week",
+    marginal_kws=dict(bins=15),
+)
+plt.suptitle(
+    "Jointplot of 'age' vs 'hours-per-week' \nbefore StandardScaler", y=1.1
+)
+plt.gcf()
+#+end_src
+
+#+RESULTS:
+[[file:../img/learn4_plot1.png]]
+
+#+ATTR_ORG: :width 0.4
+
+*After the normalization*
+#+begin_src python :results graphics file :file ../img/learn4_plot2.png
+plt.clf()
+sns.jointplot(
+    data=X_train_scaled[:n_points],
+    x="age",
+    y="hours-per-week",
+    marginal_kws=dict(bins=15),
+)
+plt.suptitle(
+    "Jointplot of 'age' vs 'hours-per-week' \nafter StandardScaler", y=1.1
+)
+plt.gcf()
+#+end_src
+
+#+RESULTS:
+[[file:../img/learn4_plot2.png]]
+
+#+ATTR_ORG: :width 0.4
+
+** Pipeline
+*Pipeline* allows to create steps, that will run one after another.
+#+begin_src python :results none
+from sklearn.linear_model import LogisticRegression
+from sklearn.pipeline import make_pipeline
+import time
+#+end_src
+
+#+begin_src python
+model = make_pipeline(
+    StandardScaler(),
+    LogisticRegression(),
+)
+model
+#+end_src
+
+#+RESULTS:
+: Pipeline(steps=[('standardscaler', StandardScaler()),
+:                 ('logisticregression', LogisticRegression())])
+
+#+begin_src python
+model.named_steps
+#+end_src
+
+#+RESULTS:
+: {'standardscaler': StandardScaler(), 'logisticregression': LogisticRegression()}
+
+#+begin_src python
+start = time.time()
+model.fit(X_train, y_train)
+time.time() - start
+#+end_src
+
+#+RESULTS:
+: 0.05598926544189453
+
+#+begin_src python
+model.score(X_test, y_test)
+#+end_src
+
+#+RESULTS:
+: 0.8071411022848252
+
+#+begin_src python
+model = LogisticRegression()
+start = time.time()
+model.fit(X_train, y_train)
+time.time() - start
+#+end_src
+
+#+RESULTS:
+: 0.13516998291015625
+
+#+begin_src python
+model.score(X_test, y_test)
+#+end_src
+
+#+RESULTS:
+: 0.8070592089099992
+
+** Conclusion
+/Normalization speeds up process of fitting train data/

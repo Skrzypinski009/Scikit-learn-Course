@@ -1,0 +1,6 @@
+#+title: My Exercises
+
+#+PROPERTY: header-args:python :session mex0 :async
+
+#+begin_src python
+#+end_src

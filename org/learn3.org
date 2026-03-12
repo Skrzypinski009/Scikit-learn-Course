@@ -1,0 +1,220 @@
+#+title: Learn3
+
+#+PROPERTY: header-args:python :session learn3 :async
+
+* Work with numerical data
+
+** Set up
+#+begin_src python
+import pandas as pd
+import openml
+
+DATASET_ID = 1590
+
+openml.datasets.list_datasets(output_format="dataframe")
+dataset = openml.datasets.get_dataset(DATASET_ID)
+df, _, _, _ = dataset.get_data(dataset_format="dataframe")
+df = df.drop(columns=["education-num"])
+df
+#+end_src
+
+#+RESULTS:
+#+begin_example
+       age     workclass    fnlwgt     education  ... capital-loss hours-per-week native-country  class
+0       25       Private  226802.0          11th  ...          0.0             40  United-States  <=50K
+1       38       Private   89814.0       HS-grad  ...          0.0             50  United-States  <=50K
+2       28     Local-gov  336951.0    Assoc-acdm  ...          0.0             40  United-States   >50K
+3       44       Private  160323.0  Some-college  ...          0.0             40  United-States   >50K
+4       18           NaN  103497.0  Some-college  ...          0.0             30  United-States  <=50K
+...    ...           ...       ...           ...  ...          ...            ...            ...    ...
+48837   27       Private  257302.0    Assoc-acdm  ...          0.0             38  United-States  <=50K
+48838   40       Private  154374.0       HS-grad  ...          0.0             40  United-States   >50K
+48839   58       Private  151910.0       HS-grad  ...          0.0             40  United-States  <=50K
+48840   22       Private  201490.0       HS-grad  ...          0.0             20  United-States  <=50K
+48841   52  Self-emp-inc  287927.0       HS-grad  ...          0.0             40  United-States   >50K
+
+[48842 rows x 14 columns]
+#+end_example
+
+#+begin_src python
+X, y = df.drop(columns=["class"]), df["class"]
+X
+#+end_src
+
+#+RESULTS:
+#+begin_example
+       age     workclass    fnlwgt  ... capital-loss hours-per-week native-country
+0       25       Private  226802.0  ...          0.0             40  United-States
+1       38       Private   89814.0  ...          0.0             50  United-States
+2       28     Local-gov  336951.0  ...          0.0             40  United-States
+3       44       Private  160323.0  ...          0.0             40  United-States
+4       18           NaN  103497.0  ...          0.0             30  United-States
+...    ...           ...       ...  ...          ...            ...            ...
+48837   27       Private  257302.0  ...          0.0             38  United-States
+48838   40       Private  154374.0  ...          0.0             40  United-States
+48839   58       Private  151910.0  ...          0.0             40  United-States
+48840   22       Private  201490.0  ...          0.0             20  United-States
+48841   52  Self-emp-inc  287927.0  ...          0.0             40  United-States
+
+[48842 rows x 13 columns]
+#+end_example
+
+#+begin_src python
+y
+#+end_src
+
+#+RESULTS:
+#+begin_example
+0        <=50K
+1        <=50K
+2         >50K
+3         >50K
+4        <=50K
+         ...
+48837    <=50K
+48838     >50K
+48839    <=50K
+48840    <=50K
+48841     >50K
+Name: class, Length: 48842, dtype: category
+Categories (2, str): ['>50K' < '<=50K']
+#+end_example
+
+** Identify numerical data
+
+#+begin_src python
+X.dtypes
+#+end_src
+
+#+RESULTS:
+#+begin_example
+age                  uint8
+workclass         category
+fnlwgt             float64
+education         category
+marital-status    category
+occupation        category
+relationship      category
+race              category
+sex               category
+capital-gain       float64
+capital-loss       float64
+hours-per-week       uint8
+native-country    category
+dtype: object
+#+end_example
+
+#+begin_src python
+X.dtypes.unique()
+#+end_src
+
+#+RESULTS:
+#+begin_example
+array([dtype('uint8'),
+       CategoricalDtype(categories=['Private', 'Self-emp-not-inc', 'Self-emp-inc', 'Federal-gov',
+                         'Local-gov', 'State-gov', 'Without-pay', 'Never-worked'],
+       , ordered=True, categories_dtype=str)                                                     ,
+       dtype('float64'),
+       CategoricalDtype(categories=['Bachelors', 'Some-college', '11th', 'HS-grad',
+                         'Prof-school', 'Assoc-acdm', 'Assoc-voc', '9th', '7th-8th',
+                         '12th', 'Masters', '1st-4th', '10th', 'Doctorate', '5th-6th',
+                         'Preschool'],
+       , ordered=True, categories_dtype=str)                                          ,
+       CategoricalDtype(categories=['Married-civ-spouse', 'Divorced', 'Never-married',
+                         'Separated', 'Widowed', 'Married-spouse-absent',
+                         'Married-AF-spouse'],
+       , ordered=True, categories_dtype=str)                                          ,
+       CategoricalDtype(categories=['Tech-support', 'Craft-repair', 'Other-service', 'Sales',
+                         'Exec-managerial', 'Prof-specialty', 'Handlers-cleaners',
+                         'Machine-op-inspct', 'Adm-clerical', 'Farming-fishing',
+                         'Transport-moving', 'Priv-house-serv', 'Protective-serv',
+                         'Armed-Forces'],
+       , ordered=True, categories_dtype=str)                                                 ,
+       CategoricalDtype(categories=['Wife', 'Own-child', 'Husband', 'Not-in-family',
+                         'Other-relative', 'Unmarried'],
+       , ordered=True, categories_dtype=str)                                        ,
+       CategoricalDtype(categories=['White', 'Asian-Pac-Islander', 'Amer-Indian-Eskimo', 'Other',
+                         'Black'],
+       , ordered=True, categories_dtype=str)                                                     ,
+       CategoricalDtype(categories=['Female', 'Male'], ordered=True, categories_dtype=str),
+       CategoricalDtype(categories=['United-States', 'Cambodia', 'England', 'Puerto-Rico',
+                         'Canada', 'Germany', 'Outlying-US(Guam-USVI-etc)', 'India',
+                         'Japan', 'Greece', 'South', 'China', 'Cuba', 'Iran',
+                         'Honduras', 'Philippines', 'Italy', 'Poland', 'Jamaica',
+                         'Vietnam', 'Mexico', 'Portugal', 'Ireland', 'France',
+                         'Dominican-Republic', 'Laos', 'Ecuador', 'Taiwan', 'Haiti',
+                         'Columbia', 'Hungary', 'Guatemala', 'Nicaragua', 'Scotland',
+                         'Thailand', 'Yugoslavia', 'El-Salvador', 'Trinadad&Tobago',
+                         'Peru', 'Hong', 'Holand-Netherlands'],
+       , ordered=True, categories_dtype=str)                                              ],
+      dtype=object)
+#+end_example
+
+#+begin_src python
+numerical_columns = ["age", "capital-gain", "capital-loss", "hours-per-week"]
+X[numerical_columns]
+#+end_src
+
+#+RESULTS:
+#+begin_example
+       age  capital-gain  capital-loss  hours-per-week
+0       25           0.0           0.0              40
+1       38           0.0           0.0              50
+2       28           0.0           0.0              40
+3       44        7688.0           0.0              40
+4       18           0.0           0.0              30
+...    ...           ...           ...             ...
+48837   27           0.0           0.0              38
+48838   40           0.0           0.0              40
+48839   58           0.0           0.0              40
+48840   22           0.0           0.0              20
+48841   52       15024.0           0.0              40
+
+[48842 rows x 4 columns]
+#+end_example
+
+
+#+begin_src python
+X['age'].describe()
+#+end_src
+
+#+RESULTS:
+: count    48842.000000
+: mean        38.643585
+: std         13.710510
+: min         17.000000
+: 25%         28.000000
+: 50%         37.000000
+: 75%         48.000000
+: max         90.000000
+: Name: age, dtype: float64
+
+#+begin_src python :results none
+X_numeric = X[numerical_columns]
+#+end_src
+
+#+begin_src python :results none
+from sklearn.model_selection import train_test_split
+X_train, X_test, y_train, y_test = train_test_split(
+    X_numeric, y, random_state=42, test_size=0.25
+)
+#+end_src
+
+#+begin_src python
+f"Number of samples in testing: {X_test.shape[0]} => " + \
+f"{X_test.shape[0] / X_numeric.shape[0] * 100:.1f}% of the " + \
+"original set"
+#+end_src
+
+#+RESULTS:
+: Number of samples in testing: 12211 => 25.0% of the original set
+
+#+begin_src python
+from sklearn.linear_model import LogisticRegression
+model = LogisticRegression()
+
+model.fit(X_train, y_train)
+accuracy = model.score(X_test, y_test)
+
+f"Accuracy of logistic regression: {accuracy:.3f}"
+#+end_src

@@ -1,0 +1,83 @@
+#+title: Exercise3
+
+#+PROPERTY: header-args:python :session ex3 :async
+
+#+begin_src python :results none
+import pandas as pd
+import openml
+
+DATASET_ID = 1590
+
+openml.datasets.list_datasets(output_format="dataframe")
+dataset = openml.datasets.get_dataset(DATASET_ID)
+adult_census, _, _, _ = dataset.get_data(dataset_format="dataframe")
+#+end_src
+
+#+begin_src python :results none
+target_name = "class"
+y = adult_census[target_name]
+X = adult_census.drop(columns=[target_name])
+
+numerical_columns = ['age', 'capital-gain', 'capital-loss', 'hours-per-week']
+X_numeric = X[numerical_columns]
+#+end_src
+
+#+begin_src python :results none
+from sklearn.model_selection import train_test_split
+
+X_train, X_test, y_train, y_test = train_test_split(
+    X_numeric, y, random_state=42, test_size=0.25
+)
+#+end_src
+
+#+begin_src python
+X_train.head()
+#+end_src
+
+#+RESULTS:
+:        age  capital-gain  capital-loss  hours-per-week
+: 27859   41           0.0        2415.0              12
+: 5654    39           0.0           0.0              37
+: 3779    34           0.0           0.0              50
+: 10522   56           0.0           0.0              40
+: 22461   71           0.0           0.0               2
+
+#+begin_src python :results none
+from sklearn.dummy import DummyClassifier
+#+end_src
+
+#+begin_src python
+model = DummyClassifier(strategy="most_frequent")
+model.fit(X_numeric, y)
+prediction = model.predict(X_numeric[:1])
+prediction
+#+end_src
+
+#+RESULTS:
+: array(['<=50K'], dtype='<U5')
+
+#+begin_src python
+accuracy = model.score(X_numeric, y)
+accuracy
+#+end_src
+
+#+RESULTS:
+: 0.7607182343065395
+
+#+begin_src python
+model = DummyClassifier(strategy="constant", constant='>50K')
+model.fit(X_numeric, y)
+prediction = model.predict(X_numeric[:1])
+prediction
+#+end_src
+
+#+RESULTS:
+: array(['>50K'], dtype='<U4')
+
+#+begin_src python
+accuracy = model.score(X_numeric, y)
+accuracy
+#+end_src
+
+#+RESULTS:
+: 0.23928176569346055

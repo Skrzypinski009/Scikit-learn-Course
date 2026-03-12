@@ -1,0 +1,252 @@
+#+title: Learn6
+
+#+PROPERTY: header-args:python :session learn6 :async
+
+* Encoding categorical variables
+** Set up
+#+begin_src python :results none
+import openml
+from sklearn.model_selection import train_test_split
+
+DATASET_ID = 1590
+
+openml.datasets.list_datasets(output_format="dataframe")
+dataset = openml.datasets.get_dataset(DATASET_ID)
+
+df, _, _, _ = dataset.get_data(dataset_format="dataframe")
+X, y = df.drop(columns=["class"]), df["class"]
+#+end_src
+
+** Reordering categories for native-country for sorting
+#+begin_src python
+X['native-country'] = X['native-country'].cat.reorder_categories(
+    sorted(X["native-country"].cat.categories), ordered=True
+)
+counts = X['native-country'].value_counts().sort_index()
+counts
+#+end_src
+
+#+RESULTS:
+#+begin_example
+native-country
+Cambodia                         28
+Canada                          182
+China                           122
+Columbia                         85
+Cuba                            138
+Dominican-Republic              103
+Ecuador                          45
+El-Salvador                     155
+England                         127
+France                           38
+Germany                         206
+Greece                           49
+Guatemala                        88
+Haiti                            75
+Holand-Netherlands                1
+Honduras                         20
+Hong                             30
+Hungary                          19
+India                           151
+Iran                             59
+Ireland                          37
+Italy                           105
+Jamaica                         106
+Japan                            92
+Laos                             23
+Mexico                          951
+Nicaragua                        49
+Outlying-US(Guam-USVI-etc)       23
+Peru                             46
+Philippines                     295
+Poland                           87
+Portugal                         67
+Puerto-Rico                     184
+Scotland                         21
+South                           115
+Taiwan                           65
+Thailand                         30
+Trinadad&Tobago                  27
+United-States                 43832
+Vietnam                          86
+Yugoslavia                       23
+Name: count, dtype: int64
+#+end_example
+
+#+begin_src python
+X.dtypes
+#+end_src
+
+#+RESULTS:
+#+begin_example
+age                  uint8
+workclass         category
+fnlwgt             float64
+education         category
+education-num        uint8
+marital-status    category
+occupation        category
+relationship      category
+race              category
+sex               category
+capital-gain       float64
+capital-loss       float64
+hours-per-week       uint8
+native-country    category
+dtype: object
+#+end_example
+
+** Changing Category type to object for testing
+#+begin_src python :results none
+cat_cols = X.select_dtypes(include=['category']).columns
+X[cat_cols] = X[cat_cols].astype(object)
+#+end_src
+
+
+** Column selector
+
+selecting columns by dtype (object)
+
+#+begin_src python
+from sklearn.compose import make_column_selector as selector
+categorical_columns_selector = selector(dtype_include=object)
+categorical_columns = categorical_columns_selector(X)
+X_categorical = X[categorical_columns]
+categorical_columns
+#+end_src
+
+#+RESULTS:
+| workclass | education | marital-status | occupation | relationship | race | sex | native-country |
+
+** OrdinalEncoder
+
+*** Transforming one column from categorical to numeric data.
+
+#+begin_src python
+from sklearn.preprocessing import OrdinalEncoder
+
+education_column = X_categorical[["education"]]
+encoder = OrdinalEncoder().set_output(transform="pandas")
+education_encoded = encoder.fit_transform(education_column)
+education_encoded
+#+end_src
+
+#+RESULTS:
+#+begin_example
+       education
+0            1.0
+1           11.0
+2            7.0
+3           15.0
+4           15.0
+...          ...
+48837        7.0
+48838       11.0
+48839       11.0
+48840       11.0
+48841       11.0
+
+[48842 rows x 1 columns]
+#+end_example
+
+*** Categories preview
+
+#+begin_src python
+encoder.categories_
+#+end_src
+
+#+RESULTS:
+| array | ((10th 11th 12th 1st-4th 5th-6th 7th-8th 9th Assoc-acdm Assoc-voc Bachelors Doctorate HS-grad Masters Preschool Prof-school Some-college) dtype=object) |
+
+*** Encoding all categorical columns
+#+begin_src python
+X_encoded = encoder.fit_transform(X_categorical)
+X_encoded[:5]
+#+end_src
+
+#+RESULTS:
+:    workclass  education  marital-status  ...  race  sex  native-country
+: 0        3.0        1.0             4.0  ...   2.0  1.0            38.0
+: 1        3.0       11.0             2.0  ...   4.0  1.0            38.0
+: 2        1.0        7.0             2.0  ...   4.0  1.0            38.0
+: 3        3.0       15.0             2.0  ...   2.0  1.0            38.0
+: 4        NaN       15.0             4.0  ...   4.0  0.0            38.0
+:
+: [5 rows x 8 columns]
+
+** OneHotEncoder
+
+This makes column for each category, and sets it to 1 for samples with this category, and 0 for others.
+
+#+begin_src python
+from sklearn.preprocessing import OneHotEncoder
+
+encoder = OneHotEncoder(sparse_output=False).set_output(transform="pandas")
+education_encoded = encoder.fit_transform(education_column)
+education_encoded
+#+end_src
+
+#+RESULTS:
+#+begin_example
+       education_10th  ...  education_Some-college
+0                 0.0  ...                     0.0
+1                 0.0  ...                     0.0
+2                 0.0  ...                     0.0
+3                 0.0  ...                     1.0
+4                 0.0  ...                     1.0
+...               ...  ...                     ...
+48837             0.0  ...                     0.0
+48838             0.0  ...                     0.0
+48839             0.0  ...                     0.0
+48840             0.0  ...                     0.0
+48841             0.0  ...                     0.0
+
+[48842 rows x 16 columns]
+#+end_example
+
+** Conclusion
+*OrdinalEncoder* transforms categorical data to numerical in one column, in way that can be interpreted as order (0 < 1 < 2). It is good for categories like cloth sizes (S, M, L, XL).
+
+The impact of this ordering assumption is dependent on the models. *Linear models* would be impacted by misordered categories while *tree-based models* would not.
+
+Using *OrdinalEncoder*  require to ensure that:
+ * the original categories (before encoding) have an ordering;
+ * the encoded categories follow the same ordering than the original categories.
+
+*One-hot encoding* categorical variables with high cardinality can cause computational inefficiency in tree-based models. Because of this, is not recommended to use *OneHotEncoder* in such cases even if the original categories do not have a given order.
+
+** Evaluate predictive pipeline
+
+#+begin_src python :results none
+from sklearn.pipeline import make_pipeline
+from sklearn.linear_model import LogisticRegression
+#+end_src
+
+#+begin_src python :results none
+model = make_pipeline(
+    OneHotEncoder(handle_unknown="ignore"),
+    LogisticRegression(max_iter=500),
+)
+#+end_src
+
+#+begin_src python :results output
+from sklearn.model_selection import cross_validate
+
+cv_results = cross_validate(model, X_categorical, y)
+
+for key, val in cv_results.items():
+    print(f"| {key:<10} | {cv_results[key]} |")
+#+end_src
+
+#+RESULTS:
+: | fit_time   | [0.18463016 0.21567941 0.21529794 0.17756915 0.16818881] |
+: | score_time | [0.02961898 0.0300529  0.01962924 0.02115917 0.02107978] |
+: | test_score | [0.83232675 0.83570478 0.82831695 0.83292383 0.83497133] |
+
+#+begin_src python :results output
+scores = cv_results['test_score']
+print(f"Accuracy: {scores.mean():.3f} +- {scores.std():.3f}")
+#+end_src
+
+#+RESULTS:
+: Accuracy: 0.8328487299031877 +- 0.0025875695779233156
