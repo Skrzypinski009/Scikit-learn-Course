@@ -1,22 +1,13 @@
-#+title: Index
-
-* Lessons in order
+* Index of lessons
 ** The predictive modeling pipeline
 *** Tabular data exploration
- * [[file:learn1.org][First look at our dataset]]
- * [[file:exercise1.org][Exercise]]
+ * [[file:learn1.org][First look at our dataset]] | [[file:exercise1.org][Exercise]]
 
 *** Fitting a scikit-learn model on numerical data
- * [[file:learn2.org][First model with scikit-learn]]
- * [[file:exercise2.org][Exercise]]
-
- * [[file:learn3.org][Working with numerical data]]
- * [[file:exercise3.org][Exercise]]
-
+ * [[file:learn2.org][First model with scikit-learn]] | [[file:exercise2.org][Exercise]]
+ * [[file:learn3.org][Working with numerical data]] | [[file:exercise3.org][Exercise]]
  * [[file:learn4.org][Preprocessing for numerical features]]
-
  * [[file:learn5.org][Model evaluation using cross-validation]]
 
 *** Handling categorical data
- * [[file:learn6.org][Encoding of categorical variables]]
- * [[file:exercise4.org][Exercise]]
+ * [[file:learn6.org][Encoding of categorical variables]] | [[file:exercise4.org][Exercise]]

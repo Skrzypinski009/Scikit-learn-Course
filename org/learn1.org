@@ -1,7 +1,7 @@
-#+title: Test
+#+PROPERTY: header-args:python :session learn1 :async
 
-#+PROPERTY: header-args:python :session main :async
-
+* First look at our dataset
+** Set up
 #+BEGIN_SRC python
 import openml
 DATASET_ID = 1590
@@ -12,100 +12,33 @@ X, y, _, _ = dataset.get_data(dataset_format="dataframe")
 X.head()
 #+END_SRC
 
-#+RESULTS:
-:    age  workclass    fnlwgt     education  education-num      marital-status  ...     sex capital-gain capital-loss hours-per-week  native-country  class
-: 0   25    Private  226802.0          11th              7       Never-married  ...    Male          0.0          0.0             40   United-States  <=50K
-: 1   38    Private   89814.0       HS-grad              9  Married-civ-spouse  ...    Male          0.0          0.0             50   United-States  <=50K
-: 2   28  Local-gov  336951.0    Assoc-acdm             12  Married-civ-spouse  ...    Male          0.0          0.0             40   United-States   >50K
-: 3   44    Private  160323.0  Some-college             10  Married-civ-spouse  ...    Male       7688.0          0.0             40   United-States   >50K
-: 4   18        NaN  103497.0  Some-college             10       Never-married  ...  Female          0.0          0.0             30   United-States  <=50K
-:
-: [5 rows x 15 columns]
-
 #+begin_src python
 target_column = "class"
 X[target_column].value_counts()
 #+end_src
 
-#+RESULTS:
-: class
-: <=50K    37155
-: >50K     11687
-: Name: count, dtype: int64
-
-#+begin_src python :results graphics file :file ../img/plot.png
+** Histogram
+#+begin_src python :results graphics file :file ../img/learn1_plot1.png
 import matplotlib.pyplot as plt
 plt.clf()
 X.hist(figsize=(20, 14))
 plt.gcf()
 #+end_src
 
-#+ATTR_ORG: :width 1.0
-#+RESULTS:
-[[file:plot.png]]
-
+** Value counts
 #+begin_src python
 X["sex"].value_counts()
 #+end_src
-
-#+RESULTS:
-: sex
-: Male      32650
-: Female    16192
-: Name: count, dtype: int64
 
 #+begin_src python
 X["education"].value_counts()
 #+end_src
 
-#+RESULTS:
-#+begin_example
-education
-HS-grad         15784
-Some-college    10878
-Bachelors        8025
-Masters          2657
-Assoc-voc        2061
-11th             1812
-Assoc-acdm       1601
-10th             1389
-7th-8th           955
-Prof-school       834
-9th               756
-12th              657
-Doctorate         594
-5th-6th           509
-1st-4th           247
-Preschool          83
-Name: count, dtype: int64
-#+end_example
-
 #+begin_src python
 X["education-num"].value_counts()
 #+end_src
 
-#+RESULTS:
-#+begin_example
-education-num
-9     15784
-10    10878
-13     8025
-14     2657
-11     2061
-7      1812
-12     1601
-6      1389
-4       955
-15      834
-5       756
-8       657
-16      594
-3       509
-2       247
-1        83
-Name: count, dtype: int64
-#+end_example
-
+** Crosstab
 #+begin_src python
 import pandas as pd
 pd.crosstab(
@@ -113,29 +46,8 @@ pd.crosstab(
 )
 #+end_src
 
-#+RESULTS:
-#+begin_example
-education-num  1    2    3    4    5     6     7    8      9      10    11    12    13    14   15   16
-education
-Bachelors       0    0    0    0    0     0     0    0      0      0     0     0  8025     0    0    0
-Some-college    0    0    0    0    0     0     0    0      0  10878     0     0     0     0    0    0
-11th            0    0    0    0    0     0  1812    0      0      0     0     0     0     0    0    0
-HS-grad         0    0    0    0    0     0     0    0  15784      0     0     0     0     0    0    0
-Prof-school     0    0    0    0    0     0     0    0      0      0     0     0     0     0  834    0
-Assoc-acdm      0    0    0    0    0     0     0    0      0      0     0  1601     0     0    0    0
-Assoc-voc       0    0    0    0    0     0     0    0      0      0  2061     0     0     0    0    0
-9th             0    0    0    0  756     0     0    0      0      0     0     0     0     0    0    0
-7th-8th         0    0    0  955    0     0     0    0      0      0     0     0     0     0    0    0
-12th            0    0    0    0    0     0     0  657      0      0     0     0     0     0    0    0
-Masters         0    0    0    0    0     0     0    0      0      0     0     0     0  2657    0    0
-1st-4th         0  247    0    0    0     0     0    0      0      0     0     0     0     0    0    0
-10th            0    0    0    0    0  1389     0    0      0      0     0     0     0     0    0    0
-Doctorate       0    0    0    0    0     0     0    0      0      0     0     0     0     0    0  594
-5th-6th         0    0  509    0    0     0     0    0      0      0     0     0     0     0    0    0
-Preschool      83    0    0    0    0     0     0    0      0      0     0     0     0     0    0    0
-#+end_example
-
-#+begin_src python :results graphics file :file ../img/plot2.png
+** Pairplot
+#+begin_src python :results graphics file :file ../img/learn1_plot2.png
 import seaborn as sns
 
 n_samples = 5000
@@ -153,10 +65,8 @@ sns.pairplot(
 plt.gcf()
 #+end_src
 
-#+RESULTS:
-[[file:plot2.png]]
-
-#+begin_src python :results graphics file :file ../img/plot3.png
+** Scatterplot
+#+begin_src python :results graphics file :file ../img/learn1_plot3.png
 plt.clf()
 plt.figure(figsize=(5, 4))
 sns.scatterplot(
@@ -174,12 +84,4 @@ hours_per_week_limit = 40
 plt.axhline(y=hours_per_week_limit, xmin=0.18, xmax=1, color="black", linestyle="--")
 
 plt.gcf()
-#+end_src
-
-#+ATTR_ORG: :width 0.7
-#+RESULTS:
-[[file:plot3.png]]
-
-#+begin_src python
-
 #+end_src

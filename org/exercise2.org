@@ -1,9 +1,8 @@
-#+title: Exercise2
-
 #+PROPERTY: header-args:python :session ex2 :async
 
+* Exercise 2
 ** Setup
-#+begin_src python
+#+begin_src python :results none
 import pandas as pd
 import openml
 
@@ -18,25 +17,16 @@ X = adult_census.drop(columns=[target_name])
 y = adult_census["class"]
 #+end_src
 
-#+RESULTS:
-: None
-
 ** Creating model
-#+begin_src python
+#+begin_src python :results none
 from sklearn.neighbors import KNeighborsClassifier
 model = KNeighborsClassifier(n_neighbors=50)
 #+end_src
 
-#+RESULTS:
-: None
-
 ** Training
-#+begin_src python
+#+begin_src python :results none
 model.fit(X, y)
 #+end_src
-
-#+RESULTS:
-: KNeighborsClassifier(n_neighbors=50)
 
 ** Predictions
 #+begin_src python
@@ -45,17 +35,11 @@ prediction = model.predict(X[:10])
 f"{(prediction == y[:10]).sum()} / 10"
 #+end_src
 
-#+RESULTS:
-: 9 / 10
-
 ** Accuracy
 #+begin_src python
 accuracy = model.score(X, y)
 accuracy
 #+end_src
-
-#+RESULTS:
-: 0.8300028663854879
 
 ** Accuracy on splitted data
 #+begin_src python
@@ -73,6 +57,3 @@ model.fit(X_train, y_train)
 accuracy = model.score(X_test, y_test)
 accuracy
 #+end_src
-
-#+RESULTS:
-: 0.8251552583088787

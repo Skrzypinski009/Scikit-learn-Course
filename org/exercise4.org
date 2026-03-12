@@ -1,8 +1,6 @@
-#+title: Exercise4
-
 #+PROPERTY: header-args:python :session ex6 :async
 
-* Exercise :)
+* Exercise
 ** Set up
 #+begin_src python :results none
 import openml
@@ -18,6 +16,7 @@ df, _, _, _ = dataset.get_data(dataset_format="dataframe")
 X, y = df.drop(columns=[target_name, "education-num"]), df[target_name]
 #+end_src
 
+** Column selector
 #+begin_src python
 from sklearn.compose import make_column_selector as selector
 categorical_columns_selector = selector(dtype_include='category')
@@ -25,38 +24,19 @@ categorical_columns = categorical_columns_selector(X)
 categorical_columns
 #+end_src
 
-#+RESULTS:
-| workclass | education | marital-status | occupation | relationship | race | sex | native-country |
-
 #+begin_src python
 X_categorical = X[categorical_columns]
 X_categorical
 #+end_src
 
-#+RESULTS:
-#+begin_example
-          workclass     education      marital-status  ...   race     sex native-country
-0           Private          11th       Never-married  ...  Black    Male  United-States
-1           Private       HS-grad  Married-civ-spouse  ...  White    Male  United-States
-2         Local-gov    Assoc-acdm  Married-civ-spouse  ...  White    Male  United-States
-3           Private  Some-college  Married-civ-spouse  ...  Black    Male  United-States
-4               NaN  Some-college       Never-married  ...  White  Female  United-States
-...             ...           ...                 ...  ...    ...     ...            ...
-48837       Private    Assoc-acdm  Married-civ-spouse  ...  White  Female  United-States
-48838       Private       HS-grad  Married-civ-spouse  ...  White    Male  United-States
-48839       Private       HS-grad             Widowed  ...  White  Female  United-States
-48840       Private       HS-grad       Never-married  ...  White    Male  United-States
-48841  Self-emp-inc       HS-grad  Married-civ-spouse  ...  White  Female  United-States
-
-[48842 rows x 8 columns]
-#+end_example
-
+** Comparing OrdinalEncoder and OneHotEncoder
 #+begin_src python :results none
 from sklearn.pipeline import make_pipeline
 from sklearn.preprocessing import OrdinalEncoder
 from sklearn.linear_model import LogisticRegression
 #+end_src
 
+*** OrdinalEncoder
 #+begin_src python :results none
 model = make_pipeline(
 
@@ -80,11 +60,7 @@ for key, val in cv_results.items():
     print(f"| {key:<10} | {val} |")
 #+end_src
 
-#+RESULTS:
-: | fit_time   | [0.28332281 0.3070569  0.31552839 0.33202553 0.3777256 ] |
-: | score_time | [0.03104544 0.03225183 0.03251028 0.03304529 0.03224611] |
-: | test_score | [0.75514382 0.75555328 0.75573301 0.75307125 0.75788288] |
-
+*** OneHotEncoder
 #+begin_src python :results output :time
 from sklearn.preprocessing import OneHotEncoder
 
@@ -98,11 +74,6 @@ cv_results_ohe = cross_validate(model_ohe, X_categorical, y)
 for key, val in cv_results_ohe.items():
     print(f"| {key:<10} | {val} |")
 #+end_src
-
-#+RESULTS:
-: | fit_time   | [0.24703097 0.26126456 0.27580452 0.28261733 0.26251292] |
-: | score_time | [0.04211712 0.04212546 0.04678679 0.04398155 0.04306626] |
-: | test_score | [0.83232675 0.83570478 0.82831695 0.83292383 0.83497133] |
 
 #+begin_src python :results output
 scores = cv_results['test_score']
@@ -122,16 +93,5 @@ print(f"accuracy: {scores_ohe.mean():.3f} +- {scores_ohe.std():.3f}")
 print(f"fit_time: {fit_time_ohe.mean():.3f}")
 print(f"score_time: {score_time_ohe.mean():.3f}")
 #+end_src
-
-#+RESULTS:
-: ---OrdinalEncoder
-: accuracy: 0.755 +- 0.002
-: fit_time: 0.323
-: score_time: 0.032
-:
-: ---OneHotEncoder
-: accuracy: 0.833 +- 0.003
-: fit_time: 0.266
-: score_time: 0.044
 
 Beside the score time, the *OneHotEncoder* has better results than *OrdinalEncoder*.

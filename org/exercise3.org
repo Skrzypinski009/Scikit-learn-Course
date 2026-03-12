@@ -1,7 +1,7 @@
-#+title: Exercise3
+#+Property: header-args:python :session ex3 :async
 
-#+PROPERTY: header-args:python :session ex3 :async
-
+* Exercise3
+** Set up
 #+begin_src python :results none
 import pandas as pd
 import openml
@@ -22,6 +22,7 @@ numerical_columns = ['age', 'capital-gain', 'capital-loss', 'hours-per-week']
 X_numeric = X[numerical_columns]
 #+end_src
 
+** Data split
 #+begin_src python :results none
 from sklearn.model_selection import train_test_split
 
@@ -34,14 +35,7 @@ X_train, X_test, y_train, y_test = train_test_split(
 X_train.head()
 #+end_src
 
-#+RESULTS:
-:        age  capital-gain  capital-loss  hours-per-week
-: 27859   41           0.0        2415.0              12
-: 5654    39           0.0           0.0              37
-: 3779    34           0.0           0.0              50
-: 10522   56           0.0           0.0              40
-: 22461   71           0.0           0.0               2
-
+** DummyClassifier
 #+begin_src python :results none
 from sklearn.dummy import DummyClassifier
 #+end_src
@@ -53,16 +47,10 @@ prediction = model.predict(X_numeric[:1])
 prediction
 #+end_src
 
-#+RESULTS:
-: array(['<=50K'], dtype='<U5')
-
 #+begin_src python
 accuracy = model.score(X_numeric, y)
 accuracy
 #+end_src
-
-#+RESULTS:
-: 0.7607182343065395
 
 #+begin_src python
 model = DummyClassifier(strategy="constant", constant='>50K')
@@ -71,13 +59,7 @@ prediction = model.predict(X_numeric[:1])
 prediction
 #+end_src
 
-#+RESULTS:
-: array(['>50K'], dtype='<U4')
-
 #+begin_src python
 accuracy = model.score(X_numeric, y)
 accuracy
 #+end_src
-
-#+RESULTS:
-: 0.23928176569346055
