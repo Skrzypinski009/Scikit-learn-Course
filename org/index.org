@@ -1,5 +1,7 @@
 * Index of lessons
+
 ** The predictive modeling pipeline
+
 *** Tabular data exploration
  * [[file:learn1.org][First look at our dataset]] | [[file:exercise1.org][Exercise]]
 
@@ -11,3 +13,10 @@
 
 *** Handling categorical data
  * [[file:learn6.org][Encoding of categorical variables]] | [[file:exercise4.org][Exercise]]
+
+** Selecting the best model
+*** Overfiting and underfitting
+ * [[file:learn8.org][Cross validation framework]] | [[file:quiz1.org][Quiz]]
+
+*** Validation and learning curves
+ * [[file:learn9.org][Overfit-generalization-underfit]]

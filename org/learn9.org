@@ -1,0 +1,82 @@
+#+PROPERTY: header-args:python :session learn9 :async :results output
+
+* Overfit-generalization-underfit
+
+** Set up
+#+begin_src python
+from sklearn.datasets import fetch_california_housing
+
+housing = fetch_california_housing(as_frame=True)
+X, y = housing.data, housing.target
+y *= 100  # rescale the target in k$
+#+end_src
+
+** DecisionTreeRegressor
+#+begin_src python
+from sklearn.tree import DecisionTreeRegressor
+
+regressor = DecisionTreeRegressor()
+#+end_src
+
+** ShuffleSplit with cross validation
+#+begin_src python
+import pandas as pd
+from sklearn.model_selection import cross_validate, ShuffleSplit
+
+cv = ShuffleSplit(n_splits=30, test_size=0.2, random_state=0)
+cv_results = cross_validate(
+    regressor,
+    X,
+    y,
+    cv=cv,
+    scoring="neg_mean_absolute_error",
+    return_train_score=True,
+    n_jobs=2,
+)
+cv_results = pd.DataFrame(cv_results)
+#+end_src
+
+#+begin_src python
+scores = pd.DataFrame()
+scores[["train error", "test error"]] = -cv_results[
+    ["train_score", "test_score"]
+]
+#+end_src
+
+** Train and test errors distribution
+#+begin_src python :results graphics file :file ../img/learn9_plot1.png
+import matplotlib.pyplot as plt
+
+scores.plot.hist(bins=50, edgecolor="black")
+plt.xlabel("Mean absolute error (k$)")
+plt.title("Train and test errors distribution via cross-validation")
+#+end_src
+
+** ValidationCurveDisplay
+Visualization of the difference between the error in the train and test data.
+
+#+begin_src python  :results graphics file :file ../img/learn9_plot2.png
+import numpy as np
+from sklearn.model_selection import ValidationCurveDisplay
+
+plt.clf()
+max_depth = np.array([1, 5, 10, 15, 20, 25])
+disp = ValidationCurveDisplay.from_estimator(
+    regressor,
+    X,
+    y,
+    param_name="max_depth",
+    param_range=max_depth,
+    cv=cv,
+    scoring="neg_mean_absolute_error",
+    negate_score=True,
+    std_display_style="errorbar",
+    n_jobs=2,
+)
+_ = disp.ax_.set(
+    xlabel="Maximum depth of decision tree",
+    ylabel="Mean absolute error (k$)",
+    title="Validate curve for decision tree",
+)
+plt.gcf()
+#+end_src

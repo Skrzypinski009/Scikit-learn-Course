@@ -1,0 +1,21 @@
+#+PROPERTY: header-args:python :session script1 :async
+
+* Download dataset script
+
+#+begin_src python :results output
+import openml
+from sklearn.model_selection import train_test_split
+
+DATASET_ID = 1590
+
+openml.datasets.list_datasets(output_format="dataframe")
+dataset = openml.datasets.get_dataset(DATASET_ID)
+
+df, _, _, _ = dataset.get_data(dataset_format="dataframe")
+path = "../datasets/adult_census.csv"
+df.to_csv(path, index=False)
+print(f"Dataset successfully saved to '{path}'")
+#+end_src
+
+#+RESULTS:
+: Dataset successfully saved to '../datasets/adult_census.csv'
