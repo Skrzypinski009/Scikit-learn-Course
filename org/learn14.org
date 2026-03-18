@@ -1,0 +1,81 @@
+#+PROPERTY: header-args:python :session learn14 :async
+* Analysis of hyperparameter search results
+
+** Set up
+#+begin_src python
+import pandas as pd
+
+cv_results = pd.read_csv(
+    "../datasets/randomized_search_results.csv", index_col=0
+)
+cv_results
+#+end_src
+
+** Renaming column names
+#+begin_src python
+def shorten_param(param_name):
+    if "__" in param_name:
+        return param_name.rsplit("__", 1)[1]
+    return param_name
+
+
+cv_results = cv_results.rename(shorten_param, axis=1)
+cv_results
+#+end_src
+
+** Visualization of cross validation results
+#+begin_src python :results graphics file :file ../img/learn14_plot1.png
+import seaborn as sns
+import numpy as np
+import matplotlib.pyplot as plt
+
+df = pd.DataFrame(
+    {
+        "max_leaf_nodes": cv_results["max_leaf_nodes"],
+        "learning_rate": cv_results["learning_rate"],
+        "score_bin": pd.cut(
+            cv_results["mean_test_score"], bins=np.linspace(0.5, 1.0, 6)
+        ),
+    }
+)
+sns.set_palette("YlGnBu_r")
+ax = sns.scatterplot(
+    data=df,
+    x="max_leaf_nodes",
+    y="learning_rate",
+    hue="score_bin",
+    s=50,
+    color="k",
+    edgecolor=None,
+)
+ax.set_xscale("log")
+ax.set_yscale("log")
+
+_ = ax.legend(
+    title="mean_test_score", loc="center left", bbox_to_anchor=(1, 0.5)
+)
+plt.gcf()
+#+end_src
+
+
+#+begin_src python :results graphics file :file ../img/learn14_plot2.png
+import numpy as np
+import plotly.express as px
+
+plt.clf()
+fig = px.parallel_coordinates(
+    cv_results.rename(shorten_param, axis=1).apply(
+        {
+            "learning_rate": np.log10,
+            "max_leaf_nodes": np.log2,
+            "max_bins": np.log2,
+            "min_samples_leaf": np.log10,
+            "l2_regularization": np.log10,
+            "mean_test_score": lambda x: x,
+        }
+    ),
+    color="mean_test_score",
+    color_continuous_scale=px.colors.sequential.Viridis,
+)
+plt.gcf()
+#+end_src

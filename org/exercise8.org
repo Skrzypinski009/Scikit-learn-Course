@@ -1,0 +1,84 @@
+#+PROPERTY: header-args:python :session ex8 :async
+* Exercise
+
+** Set up
+#+begin_src python
+from sklearn.datasets import fetch_california_housing
+from sklearn.model_selection import train_test_split
+
+data, target = fetch_california_housing(return_X_y=True, as_frame=True)
+target *= 100  # rescale the target in k$
+
+data_train, data_test, target_train, target_test = train_test_split(
+    data, target, random_state=42
+)
+#+end_src
+
+#+RESULTS:
+: None
+
+** Creating model
+ * StandardScaler
+ * KNeighborsRegressor
+#+begin_src python
+from sklearn.preprocessing import StandardScaler
+from sklearn.neighbors import KNeighborsRegressor
+from sklearn.pipeline import Pipeline
+
+model = Pipeline(
+    steps=[
+        ("preprocessor", StandardScaler()),
+        ("regressor", KNeighborsRegressor()),
+    ]
+)
+#+end_src
+
+#+RESULTS:
+: None
+
+** RandomizedSearchCV
+Searching for best parameters with *RandomizedSearchCV*.
+#+begin_src python
+from sklearn.model_selection import RandomizedSearchCV
+import numpy as np
+
+param_distributions = {
+    "regressor__n_neighbors": np.logspace(0, 3, num=10).astype(np.int32),
+    "preprocessor__with_mean": [True, False],
+    "preprocessor__with_std": [True, False],
+}
+
+
+random_search_model = RandomizedSearchCV(
+    model,
+    n_iter=20,
+    n_jobs=2,
+    verbose=1,
+    random_state=1,
+    scoring="neg_mean_absolute_error",
+    param_distributions=param_distributions,
+)
+random_search_model.fit(data_train, target_train)
+#+end_src
+
+#+RESULTS:
+#+begin_example
+RandomizedSearchCV(estimator=Pipeline(steps=[('preprocessor', StandardScaler()),
+                                             ('regressor',
+                                              KNeighborsRegressor())]),
+                   n_iter=20, n_jobs=2,
+                   param_distributions={'preprocessor__with_mean': [True,
+                                                                    False],
+                                        'preprocessor__with_std': [True, False],
+                                        'regressor__n_neighbors': array([   1,    2,    4,   10,   21,   46,  100,  215,  464, 1000],
+      dtype=int32)},
+                   random_state=1, scoring='neg_mean_absolute_error',
+                   verbose=1)
+#+end_example
+
+#+begin_src python
+random_search_model.best_params_
+#+end_src
+
+#+RESULTS:
+: {'regressor__n_neighbors': np.int32(10), 'preprocessor__with_std': True, 'preprocessor__with_mean': True}

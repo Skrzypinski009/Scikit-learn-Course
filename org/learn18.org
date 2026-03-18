@@ -1,0 +1,139 @@
+#+PROPERTY: header-args:python :session learn18 :async
+* Linear models for classification
+
+** Set up
+Choosing only 2 features and 1 target.
+#+begin_src python
+import pandas as pd
+
+penguins = pd.read_csv("../datasets/penguins_classification.csv")
+
+penguins = (
+    penguins.set_index("Species").loc[["Adelie", "Chinstrap"]].reset_index()
+)
+culmen_columns = ["Culmen Length (mm)", "Culmen Depth (mm)"]
+target_column = "Species"
+#+end_src
+
+** Plots of feature frequency per species
+#+begin_src python :results graphics file :file ../img/learn18_plot1.png
+import matplotlib.pyplot as plt
+
+plt.clf()
+fig, ax_list = plt.subplots(1, 2, figsize=(10, 4))
+for feature_name, ax in zip(culmen_columns, ax_list):
+    penguins.groupby("Species")[feature_name].plot.hist(alpha=0.5, legend=True, ax=ax)
+    ax.set_xlabel(feature_name)
+plt.gcf()
+#+end_src
+
+** Splitting the data
+#+begin_src python
+from sklearn.model_selection import train_test_split
+
+penguins_train, penguins_test = train_test_split(penguins, random_state=0)
+
+data_train = penguins_train[culmen_columns]
+data_test = penguins_test[culmen_columns]
+
+target_train = penguins_train[target_column]
+target_test = penguins_test[target_column]
+#+end_src
+
+** Pipeline with StandardScaler and LogisticRegression
+#+begin_src python :results output
+from sklearn.pipeline import make_pipeline
+from sklearn.preprocessing import StandardScaler
+from sklearn.linear_model import LogisticRegression
+
+logistic_regression = make_pipeline(StandardScaler(), LogisticRegression())
+logistic_regression.fit(data_train, target_train)
+
+accuracy = logistic_regression.score(data_test, target_test)
+print(f"Accuracy on test set: {accuracy:.3f}")
+#+end_src
+
+** DecisionBoundaryDisplay
+#+begin_src python :results graphics file :file ../img/learn18_plot2.png
+import seaborn as sns
+from sklearn.inspection import DecisionBoundaryDisplay
+
+plt.cfl()
+DecisionBoundaryDisplay.from_estimator(
+    logistic_regression,
+    data_test,
+    response_method="predict",
+    cmap="RdBu_r",
+    alpha=0.5,
+)
+sns.scatterplot(
+    data=penguins_test,
+    x=culmen_columns[0],
+    y=culmen_columns[1],
+    hue=target_column,
+    palette=["tab:red", "tab:blue"],
+)
+_ = plt.title("Decision boundary of the trained\n LogisticRegression")
+plt.gcf()
+#+end_src
+
+** Taking weights (coefficients)
+#+begin_src python
+coefs = logistic_regression[-1].coef_[0]
+weights = pd.Series(coefs, index=[f"Weight for '{c}'" for c in culmen_columns])
+weights
+#+end_src
+
+#+begin_src python :results graphics file :file ../img/learn18_plot3.png
+plt.clf()
+weights.plot.barh()
+_ = plt.title("Weights of the logistic regression")
+plt.gcf()
+#+end_src
+
+** Prediction
+#+begin_src python
+test_penguin = pd.DataFrame(
+    {"Culmen Length (mm)": [45], "Culmen Depth (mm)": [17]}
+)
+logistic_regression.predict(test_penguin)
+#+end_src
+
+** Predict proba
+Predict proba is the probability of each class.
+#+begin_src python
+y_pred_proba = logistic_regression.predict_proba(test_penguin)
+y_pred_proba
+#+end_src
+
+#+begin_src python :results graphics file :file ../img/learn18_plot4.png
+plt.clf()
+y_proba_sample = pd.Series(
+    y_pred_proba.ravel(), index=logistic_regression.classes_
+)
+y_proba_sample.plot.bar()
+plt.ylabel("Estimated probability")
+_ = plt.title("Probability of the sample belonging to a penguin class")
+plt.gcf()
+#+end_src
+
+** DecisionBoundaryDisplay with predict_proba
+#+begin_src python :results graphics file :file ../img/learn18_plot5.png
+plt.clf()
+DecisionBoundaryDisplay.from_estimator(
+    logistic_regression,
+    data_test,
+    response_method="predict_proba",
+    cmap="RdBu_r",
+    alpha=0.7,
+)
+sns.scatterplot(
+    data=penguins_test,
+    x=culmen_columns[0],
+    y=culmen_columns[1],
+    hue=target_column,
+    palette=["tab:red", "tab:blue"],
+)
+_ = plt.title("Predicted probability of the trained\n LogisticRegression")
+plt.gcf()
+#+end_src

@@ -1,22 +1,53 @@
 * Index of lessons
 
 ** The predictive modeling pipeline
-
 *** Tabular data exploration
- * [[file:learn1.org][First look at our dataset]] | [[file:exercise1.org][Exercise]]
+ * [[file:learn1.org][First look at our dataset]]
+ * [[file:exercise1.org][Exercise]]
 
 *** Fitting a scikit-learn model on numerical data
- * [[file:learn2.org][First model with scikit-learn]] | [[file:exercise2.org][Exercise]]
- * [[file:learn3.org][Working with numerical data]] | [[file:exercise3.org][Exercise]]
+ * [[file:learn2.org][First model with scikit-learn]]
+ * [[file:exercise2.org][Exercise]]
+ * [[file:learn3.org][Working with numerical data]]
+ * [[file:exercise3.org][Exercise]]
  * [[file:learn4.org][Preprocessing for numerical features]]
  * [[file:learn5.org][Model evaluation using cross-validation]]
 
 *** Handling categorical data
- * [[file:learn6.org][Encoding of categorical variables]] | [[file:exercise4.org][Exercise]]
+ * [[file:learn6.org][Encoding of categorical variables]]
+ * [[file:exercise4.org][Exercise]]
+ * [[file:learn7.org][Using numerical and categorical variables together]]
+ * [[file:exercise5.org][Exercise]]
+ * [[file:quiz1.org][Quiz]]
 
 ** Selecting the best model
 *** Overfiting and underfitting
- * [[file:learn8.org][Cross validation framework]] | [[file:quiz1.org][Quiz]]
-
+ * [[file:learn8.org][Cross validation framework]]
 *** Validation and learning curves
  * [[file:learn9.org][Overfit-generalization-underfit]]
+ * [[file:learn10.org][Effect of the sample size in cross validation]]
+ * [[file:exercise6.org][Exercise]]
+ * [[file:quiz2.org][Quiz]]
+
+** Hyperparameter tuning
+*** Manual tuning
+ * [[file:learn11.org][Set and get hyperparameters in scikit-learn]]
+ * [[file:exercise7.org][Exercise]]
+*** Automated tuning
+ * [[file:learn12.org][Hyperparameter tuning by grid-search]]
+ * [[file:learn13.org][Hyperparameter tuning by randomized-search]]
+ * [[file:learn14.org][Analysis of hyperparameter search results]]
+ * [[file:learn15.org][Evaluation and hyperparameter tuning]]
+ * [[file:exercise8.org][Exercise]]
+
+** Linear models
+*** Intuitions on linear models
+ * [[file:learn16.org][Linear regression without scikit-learn]]
+ * [[file:exercise9.org][Exercise]]
+ * [[file:learn17.org][Linear regression using scikit-learn]]
+ * [[file:learn18.org][Linear models for classification]]
+*** Non-linear feature engineering for linear models
+ * [[file:learn19.org][Non-linear feature engineering for Linear Regression]]
+ * [[file:exercise10.org][Exercise]]
+ * [[file:learn20.org][Non-linear feature engineering for Logistic Regression]]
+ * [[file:exercise11.org][Exercise]]

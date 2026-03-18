@@ -1,0 +1,104 @@
+#+PROPERTY: header-args:python :session ex6 :async
+* Exercise
+
+** Set up
+#+begin_src python :results none
+import pandas as pd
+
+blood_transfusion = pd.read_csv("../datasets/blood_transfusion.csv")
+
+target_name = "Class"
+X = blood_transfusion.drop(columns=[target_name])
+y = blood_transfusion[target_name]
+#+end_src
+
+** Creating model
+*StandardScaler* + *SVC* (Support Vector Classification)
+#+begin_src python :results none
+from sklearn.preprocessing import StandardScaler
+from sklearn.svm import SVC
+from sklearn.pipeline import make_pipeline
+
+model = make_pipeline(
+    StandardScaler(),
+    SVC(kernel="rbf"),
+)
+#+end_src
+
+** ShuffleSplit and cross validation
+#+begin_src python :results none
+from sklearn.model_selection import ShuffleSplit, cross_validate
+
+cv = ShuffleSplit(random_state=0)
+
+cv_results = cross_validate(
+    model,
+    X,
+    y,
+    cv=cv,
+)
+#+end_src
+
+#+begin_src python
+model.get_params().keys()
+#+end_src
+
+#+RESULTS:
+: dict_keys(['memory', 'steps', 'transform_input', 'verbose', 'standardscaler', 'svc', 'standardscaler__copy', 'standardscaler__with_mean', 'standardscaler__with_std', 'svc__C', 'svc__break_ties', 'svc__cache_size', 'svc__class_weight', 'svc__coef0', 'svc__decision_function_shape', 'svc__degree', 'svc__gamma', 'svc__kernel', 'svc__max_iter', 'svc__probability', 'svc__random_state', 'svc__shrinking', 'svc__tol', 'svc__verbose'])
+
+** ValidationCurveDisplay
+Visualization of change of the accuracy with change of the *SVC gamma* parameter.
+#+begin_src python :results graphics file :file ../img/exercise6_plot1.png
+from sklearn.model_selection import ValidationCurveDisplay
+import matplotlib.pyplot as plt
+import numpy as np
+
+plt.clf()
+
+p_range = np.linspace(-3, 5, num=30)
+display = ValidationCurveDisplay.from_estimator(
+    model,
+    X,
+    y,
+    cv=cv,
+    param_name="svc__gamma",
+    param_range=p_range,
+    n_jobs=2,
+    scoring="accuracy",
+    std_display_style="errorbar",
+    errorbar_kw={"alpha": 0.7},
+)
+plt.gcf()
+#+end_src
+
+#+RESULTS:
+[[file:../img/exercise6_plot1.png]]
+
+#+begin_src python :results none
+train_sizes = np.linspace(0.1, 1.0, num=20)
+#+end_src
+
+** LearningCurveDisplay
+Visualization of change of the *mean absolute error* with change of train data size.
+#+begin_src python :results graphics file :file ../img/exercise6_plot2.png
+from sklearn.model_selection import LearningCurveDisplay
+
+plt.clf()
+display = LearningCurveDisplay.from_estimator(
+    model,
+    X,
+    y,
+    train_sizes=train_sizes,
+    cv=cv,
+    score_type="both",
+    scoring="accuracy",
+    score_name="Mean Absolute Error (k$)",
+    std_display_style="errorbar",
+    errorbar_kw={"alpha": 0.7},
+    n_jobs=2,
+)
+plt.gcf()
+#+end_src
+
+#+RESULTS:
+[[file:../img/exercise6_plot2.png]]

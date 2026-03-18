@@ -1,0 +1,158 @@
+#+PROPERTY: header-args:python :session learn12 :async
+* Hyperparameter tuning by grid-search
+
+** Set up
+#+begin_src python
+import pandas as pd
+
+adult_census = pd.read_csv("../datasets/adult_census.csv")
+target_name = "class"
+y = adult_census[target_name]
+y
+#+end_src
+
+#+begin_src python
+X = adult_census.drop(columns=[target_name, "education-num"])
+X
+#+end_src
+
+** Splitting the data
+#+begin_src python
+from sklearn.model_selection import train_test_split
+
+X_train, X_test, y_train, y_test = train_test_split(
+    X, y, random_state=42
+)
+#+end_src
+
+** Creating categorical column selector
+#+begin_src python
+from sklearn.compose import make_column_selector as selector
+
+categorical_column_selector = selector(dtype_include=object)
+categorical_columns = categorical_column_selector(X)
+categorical_columns
+#+end_src
+
+** Creating a preprocessor for categorical data
+#+begin_src python
+from sklearn.preprocessing import OrdinalEncoder
+
+categorical_preprocessor = OrdinalEncoder(
+    handle_unknown="use_encoded_value", unknown_value=-1,
+)
+#+end_src
+
+#+begin_src python
+from sklearn.compose import make_column_transformer
+
+preprocessor = make_column_transformer(
+    (categorical_preprocessor, categorical_columns),
+    remainder="passthrough",
+    force_int_remainder_cols=False,
+)
+#+end_src
+
+** Creating a pipeline
+#+begin_src python
+from sklearn.ensemble import HistGradientBoostingClassifier
+from sklearn.pipeline import Pipeline
+
+model = Pipeline(
+    steps=[
+        ("preprocessor", preprocessor),
+        ("classifier", HistGradientBoostingClassifier(
+            random_state=42, max_leaf_nodes=4
+        )),
+    ]
+)
+model
+#+end_src
+
+** GridSearchCV
+GridSearchCV helps with finding best combination of parameter values.
+
+#+begin_src python
+from sklearn.model_selection import GridSearchCV
+
+param_grid = {
+    "classifier__learning_rate": (0.01, 0.1, 1, 10),
+    "classifier__max_leaf_nodes": (3, 10, 30),
+}
+model_grid_search = GridSearchCV(model, param_grid=param_grid, n_jobs=2, cv=2)
+model_grid_search.fit(X_train, y_train)
+#+end_src
+
+*Checking best values*
+#+begin_src python
+model_grid_search.best_params_
+#+end_src
+
+#+begin_src python
+model_grid_search.predict(X_test.iloc[0:5])
+#+end_src
+
+#+begin_src python
+accuracy = model_grid_search.score(X_test, y_test)
+accuracy
+#+end_src
+
+** Taking cross validation results from the model
+#+begin_src python
+cv_results = pd.DataFrame(model_grid_search.cv_results_).sort_values(
+    "mean_test_score", ascending=False,
+)
+cv_results
+#+end_src
+
+#+begin_src python
+cv_results.columns
+#+end_src
+
+** Renaming column names
+#+begin_src python
+def shorten_param(param_name):
+    if "__" in param_name:
+        return param_name.rsplit("__", 1)[1]
+    return param_name
+
+cv_results = cv_results.rename(shorten_param, axis=1)
+
+column_results = [
+    "learning_rate",
+    "max_leaf_nodes",
+    "mean_test_score",
+    "std_test_score",
+    "rank_test_score",
+]
+cv_results = cv_results[column_results]
+cv_results.head()
+#+end_src
+
+** Pivoted cv_results
+#+begin_src python
+pivoted_cv_results = cv_results.pivot_table(
+    values="mean_test_score",
+    index=["learning_rate"],
+    columns=["max_leaf_nodes"],
+)
+pivoted_cv_results
+#+end_src
+
+** Visualization
+#+begin_src python :results graphics file :file ../img/learn12_plot1.png
+import seaborn as sns
+import matplotlib.pyplot as plt
+
+plt.clf()
+ax = sns.heatmap(
+    pivoted_cv_results,
+    annot=True,
+    cmap="YlGnBu",
+    vmin=0.7,
+    vmax=0.9,
+    cbar_kws={"label": "mean test accuracy"},
+)
+ax.invert_yaxis()
+plt.gcf()
+#+end_src

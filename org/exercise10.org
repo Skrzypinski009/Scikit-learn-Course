@@ -1,0 +1,141 @@
+#+PROPERTY: header-args:python :session ex10 :async
+* Exercise
+
+** Set up
+#+begin_src python
+import pandas as pd
+
+penguins = pd.read_csv("../datasets/penguins.csv")
+
+columns = ["Flipper Length (mm)", "Culmen Length (mm)", "Culmen Depth (mm)"]
+target_name = "Body Mass (g)"
+
+penguins_non_missing = penguins[columns + [target_name]].dropna()
+
+data = penguins_non_missing[columns]
+target = penguins_non_missing[target_name]
+data
+#+end_src
+
+#+begin_src python
+target
+#+end_src
+
+** LinearRegression
+#+begin_src python
+from sklearn.linear_model import LinearRegression
+
+lr_model = LinearRegression()
+#+end_src
+*** Cross validation
+#+begin_src python
+from sklearn.model_selection import cross_validate
+from sklearn.metrics import mean_absolute_error
+
+cv_results = pd.DataFrame(cross_validate(
+    lr_model,
+    data,
+    target,
+    cv=10,
+    scoring="neg_mean_absolute_error",
+))
+cv_results
+#+end_src
+
+#+begin_src python
+scores = cv_results['test_score']
+f"Mean error: {-scores.mean()} +- {scores.std()}"
+#+end_src
+
+** LinearRegression with PolynomialFeatures
+#+begin_src python
+from sklearn.pipeline import make_pipeline
+from sklearn.preprocessing import PolynomialFeatures
+
+model = make_pipeline(
+    PolynomialFeatures(degree=2, interaction_only=True, include_bias=False),
+    LinearRegression(),
+)
+model.set_output(transform="pandas")
+#+end_src
+
+*** Cross validation
+#+begin_src python
+cv_results = cross_validate(
+    model,
+    data,
+    target,
+    cv=10,
+    scoring="neg_mean_absolute_error",
+)
+scores = cv_results['test_score']
+f"Accuracy: {-scores.mean()} +- {scores.std()}"
+#+end_src
+
+#+begin_src python
+model.get_params()
+#+end_src
+
+*** Checking transformed structure of data
+#+begin_src python
+n = 10
+transformed_data = model.steps[0][1].fit_transform(data[:n])
+transformed_data.columns
+#+end_src
+
+*** Checking if data in new column is correct
+#+begin_src python
+transformed_data["Flipper Length (mm) Culmen Length (mm)"] == data[:n]["Flipper Length (mm)"] * data[:n]["Culmen Length (mm)"]
+#+end_src
+
+** LinearRegression with Nystorem
+#+begin_src python
+from sklearn.kernel_approximation import Nystroem
+
+model = make_pipeline(
+    Nystroem(kernel="poly", degree=2, random_state=0),
+    LinearRegression(),
+)
+#+end_src
+
+*** Visualization of inpact of n_components on MAE
+#+begin_src python :results graphics file :file ../img/exercise10_plot1.png
+from sklearn.model_selection import ValidationCurveDisplay
+import matplotlib.pyplot as plt
+import numpy as np
+
+param_range = np.array([5, 10, 50, 100])
+plt.clf()
+display = ValidationCurveDisplay.from_estimator(
+    model,
+    data,
+    target,
+    param_name="nystroem__n_components",
+    param_range=param_range,
+    negate_score=True,
+    std_display_style="errorbar",
+    errorbar_kw={"alpha": 0.5},
+    scoring="neg_mean_absolute_error",
+)
+plt.gcf()
+
+#+end_src
+
+*** Cross validation with best param values
+#+begin_src python :results output
+model.set_params(nystroem__n_components=10)
+cv_results = cross_validate(
+    model,
+    data,
+    target,
+    cv=10,
+    scoring="neg_mean_absolute_error",
+    n_jobs=2,
+)
+print(
+    "Mean absolute error on testing set with nystroem: "
+    f"{-cv_results['test_score'].mean():.3f} ± "
+    f"{cv_results['test_score'].std():.3f} g"
+)
+
+#+end_src

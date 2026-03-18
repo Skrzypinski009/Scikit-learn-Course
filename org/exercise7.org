@@ -1,0 +1,132 @@
+#+PROPERTY: header-args:python :session ex7 :async
+* Exercise
+
+** Set up
+#+begin_src python
+import pandas as pd
+from sklearn.model_selection import train_test_split
+
+adult_census = pd.read_csv("../datasets/adult_census.csv")
+target_name="class"
+y = adult_census[target_name]
+X = adult_census.drop(columns=[target_name])
+X_train, X_test, y_train, y_test = train_test_split(
+    X, y, train_size=0.2, random_state=42,
+)
+#+end_src
+
+#+RESULTS:
+: None
+
+** Create model
+ * *Preprocessor*
+   * OrdinalEncoder for categorical data
+
+ * *Pipeline*
+   * Preprocessor
+   * HistGradientBoostingClassifier
+
+#+begin_src python
+from sklearn.compose import make_column_transformer
+from sklearn.compose import make_column_selector as selector
+from sklearn.preprocessing import OrdinalEncoder
+from sklearn.ensemble import HistGradientBoostingClassifier
+from sklearn.pipeline import Pipeline
+
+categorical_preprocessor = OrdinalEncoder(
+    handle_unknown="use_encoded_value", unknown_value=-1,
+)
+
+preprocessor = make_column_transformer(
+    (categorical_preprocessor, selector(dtype_include=object)),
+    remainder="passthrough",
+)
+
+model = Pipeline(
+    steps=[
+        ("preprocessor", preprocessor),
+        ("classifier", HistGradientBoostingClassifier(random_state=42)),
+    ]
+)
+#+end_src
+
+#+begin_src python
+model.get_params().keys()
+#+end_src
+
+#+RESULTS:
+: dict_keys(['memory', 'steps', 'transform_input', 'verbose', 'preprocessor', 'classifier', 'preprocessor__force_int_remainder_cols', 'preprocessor__n_jobs', 'preprocessor__remainder', 'preprocessor__sparse_threshold', 'preprocessor__transformer_weights', 'preprocessor__transformers', 'preprocessor__verbose', 'preprocessor__verbose_feature_names_out', 'preprocessor__ordinalencoder', 'preprocessor__ordinalencoder__categories', 'preprocessor__ordinalencoder__dtype', 'preprocessor__ordinalencoder__encoded_missing_value', 'preprocessor__ordinalencoder__handle_unknown', 'preprocessor__ordinalencoder__max_categories', 'preprocessor__ordinalencoder__min_frequency', 'preprocessor__ordinalencoder__unknown_value', 'classifier__categorical_features', 'classifier__class_weight', 'classifier__early_stopping', 'classifier__interaction_cst', 'classifier__l2_regularization', 'classifier__learning_rate', 'classifier__loss', 'classifier__max_bins', 'classifier__max_depth', 'classifier__max_features', 'classifier__max_iter', 'classifier__max_leaf_nodes', 'classifier__min_samples_leaf', 'classifier__monotonic_cst', 'classifier__n_iter_no_change', 'classifier__random_state', 'classifier__scoring', 'classifier__tol', 'classifier__validation_fraction', 'classifier__verbose', 'classifier__warm_start'])
+
+#+begin_src python :results output
+for key in model.get_params().keys():
+    if 'learning_rate' in key or 'max_leaf_nodes' in key:
+        print(key)
+#+end_src
+
+#+RESULTS:
+: classifier__learning_rate
+: classifier__max_leaf_nodes
+
+** Searching for best combinations of param values
+ * *learning_rate* values: /[0.01, 0.1, 1, 10]/
+ * *max_leaf_nodes* values: /[3, 10, 30]/
+#+begin_src python :results output
+from sklearn.model_selection import cross_val_score
+
+best = None
+params = None
+for i in [0.01, 0.1, 1, 10]:
+    for j in [3, 10, 30]:
+        model.set_params(classifier__learning_rate=i)
+        model.set_params(classifier__max_leaf_nodes=j)
+
+        scores = cross_val_score(model, X, y)
+        print(f"{scores.mean()} +- {scores.std()}")
+        m = scores.mean() - scores.std()
+
+        if best == None or m > best:
+            best = m
+            params = {
+                "learning_rate": i,
+                "max_leaf_nodes": j,
+            }
+
+print(params)
+print(f"best accuracy: {best}")
+#+end_src
+
+#+RESULTS:
+#+begin_example
+0.7870889580429964 +- 0.002505699206940055
+0.8396052770681699 +- 0.005877792507110692
+0.8527497812071463 +- 0.0024702326233561104
+0.8566603068138537 +- 0.002150911607175601
+0.8712583990759853 +- 0.0022449094119224
+0.8738176424966271 +- 0.0028693730999324895
+0.8707875742091117 +- 0.004038114546739451
+0.8665083997257199 +- 0.0014816996785558178
+0.8619222780882112 +- 0.003828527081881959
+0.28072167729758074 +- 0.003960326670561044
+0.6358866809373515 +- 0.08138399731884942
+0.5613196137072686 +- 0.159972354778221
+{'learning_rate': 0.1, 'max_leaf_nodes': 30}
+best accuracy: 0.8709482693966946
+#+end_example
+
+** Prediction with best param values
+#+begin_src python :results output
+model.set_params(classifier__learning_rate=params["learning_rate"])
+model.set_params(classifier__max_leaf_nodes=params["max_leaf_nodes"])
+model.fit(X_train, y_train)
+
+prediction = model.predict(X_test[:20])
+print(f"{(prediction == y_test[:20]).sum()} / 20")
+
+accuracy = model.score(X_test, y_test)
+print(f"Accuracy: {accuracy}")
+
+#+end_src
+
+#+RESULTS:
+: 18 / 20
+: Accuracy: 0.870502124174643

@@ -1,0 +1,109 @@
+#+PROPERTY: header-args:python :session quiz2 :async
+* Wrap-up quiz 2
+
+** Set up
+#+begin_src python
+import pandas as pd
+
+blood_transfusion = pd.read_csv("../datasets/blood_transfusion.csv")
+
+target_name = "Class"
+data = blood_transfusion.drop(columns=target_name)
+target = blood_transfusion[target_name]
+#+end_src
+
+#+begin_src python
+target.value_counts()
+#+end_src
+
+ * b) The problem is a binary classification problem
+ * d) The proportion of the class counts are inbalanced
+
+ #+begin_src python
+from sklearn.dummy import DummyClassifier
+from sklearn.model_selection import cross_val_score
+
+model = DummyClassifier(strategy="most_frequent")
+
+scores = cross_val_score(model, data, target, cv=10)
+f"{scores.mean():.3f} +- {scores.std()}"
+ #+end_src
+
+ * c) ~75%
+
+#+begin_src python
+from sklearn.pipeline import make_pipeline
+from sklearn.preprocessing import StandardScaler
+from sklearn.neighbors import KNeighborsClassifier
+
+model = make_pipeline(
+    StandardScaler(),
+    KNeighborsClassifier(),
+)
+
+model.get_params()
+#+end_src
+
+#+begin_src python
+from sklearn.model_selection import cross_validate
+model.kneighborsclassifier__n_neighbors = 1
+
+cv_results = cross_validate(
+    model,
+    data,
+    target,
+    return_train_score=True,
+    cv=10,
+)
+scores = pd.DataFrame(cv_results).drop(columns=["fit_time", "score_time"])
+scores.mean()
+#+end_src
+
+#+begin_src python :results graphics file :file ../img/quiz2.png
+import matplotlib.pyplot as plt
+
+errors = scores * -1
+
+plt.clf()
+errors.plot()
+
+plt.gcf()
+#+end_src
+
+#+begin_src python
+import numpy as np
+
+param_range = np.array([1, 2, 5, 10, 20, 50, 100, 200, 500])
+#+end_src
+
+#+begin_src python
+cv_results = cross_validate(
+    model,
+    data,
+    target,
+    return_train_score=True,
+    cv=5,
+    scoring="balanced_accuracy",
+)
+
+scores = pd.DataFrame(cv_results).drop(columns=['fit_time', 'score_time'])
+scores.mean()
+#+end_src
+
+#+begin_src python :results graphics file :file ../img/quiz2_plot2.png
+from sklearn.model_selection import ValidationCurveDisplay
+from sklearn.model_selection import ShuffleSplit
+
+cv = ShuffleSplit(test_size=0.2, random_state=0)
+
+plt.clf()
+display = ValidationCurveDisplay.from_estimator(
+    model,
+    data,
+    target,
+    param_name="kneighborsclassifier__n_neighbors",
+    param_range=param_range,
+    cv=cv,
+)
+plt.gcf()
+#+end_src

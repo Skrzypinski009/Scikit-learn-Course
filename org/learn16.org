@@ -1,0 +1,84 @@
+#+PROPERTY: header-args:python :session learn16 :async
+* Linear regression without scikit-learn
+
+** Set up
+#+begin_src python
+import pandas as pd
+
+penguins = pd.read_csv("../datasets/penguins_regression.csv")
+penguins
+#+end_src
+
+#+begin_src python :results graphics file :file ../img/learn16_plot1.png
+import seaborn as sns
+import matplotlib.pyplot as plt
+
+feature_name = "Flipper Length (mm)"
+target_name = "Body Mass (g)"
+X, y = penguins[[feature_name]], penguins[target_name]
+
+ax = sns.scatterplot(
+    data=penguins, x=feature_name, y=target_name, color="black", alpha=0.5
+)
+ax.set_title("Body Mass as a function of the Flipper Length")
+plt.gcf()
+#+end_src
+
+** Linear model - line equation
+#+begin_src python
+def linear_model_flipper_mass(
+    flipper_length, weight_flipper_length, intercept_body_mass
+):
+    """Linear model of the form y = a * x + b"""
+    body_mass = weight_flipper_length * flipper_length + intercept_body_mass
+    return body_mass
+#+end_src
+
+** Prediction with previously defined function
+#+begin_src python
+import numpy as np
+
+# example values
+weight_flipper_length = 45
+intercept_body_mass = -5000
+
+# range of values
+flipper_length_range = np.linspace(X.min(), X.max(), num=300)
+
+# prediction
+predicted_body_mass = linear_model_flipper_mass(
+    flipper_length_range, weight_flipper_length, intercept_body_mass
+)
+predicted_body_mass[:10]
+#+end_src
+
+** Plot of predicted line
+#+begin_src python :results graphics file :file ../img/learn16_plot2.png
+label = "{0:.2f} (g / mm) * flipper length + {1:.2f} (g)"
+
+plt.clf()
+ax = sns.scatterplot(
+    data=penguins, x=feature_name, y=target_name, color="black", alpha=0.5
+)
+ax.plot(flipper_length_range, predicted_body_mass)
+_ = ax.set_title(label.format(weight_flipper_length, intercept_body_mass))
+plt.gcf()
+#+end_src
+
+** Plot for other values
+#+begin_src python :results graphics file :file ../img/learn16_plot3.png
+weight_flipper_length = -40
+intercept_body_mass = 13000
+
+predicted_body_mass = linear_model_flipper_mass(
+    flipper_length_range, weight_flipper_length, intercept_body_mass
+)
+
+plt.clf()
+ax = sns.scatterplot(
+    data=penguins, x=feature_name, y=target_name, color="black", alpha=0.5
+)
+ax.plot(flipper_length_range, predicted_body_mass)
+_ = ax.set_title(label.format(weight_flipper_length, intercept_body_mass))
+plt.gcf()
+#+end_src

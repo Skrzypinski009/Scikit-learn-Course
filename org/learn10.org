@@ -1,0 +1,57 @@
+#+PROPERTY: header-args:python :session learn10 :async
+* Effect of the sample size in cross validation
+
+** Set up
+#+begin_src python
+from sklearn.datasets import fetch_california_housing
+
+housing = fetch_california_housing(as_frame=True)
+X, y = housing.data, housing.target
+y *= 100  # rescale the target in k$
+y
+#+end_src
+
+** DesicionTreeRegressor
+#+begin_src python
+from sklearn.tree import DecisionTreeRegressor
+
+regressor = DecisionTreeRegressor()
+#+end_src
+
+** Train sizes
+#+begin_src python
+import numpy as np
+
+train_sizes = np.linspace(0.1, 1.0, num=5, endpoint=True)
+train_sizes
+#+end_src
+
+** ShuffleSplit
+#+begin_src python
+from sklearn.model_selection import ShuffleSplit
+
+cv = ShuffleSplit(n_splits=30, test_size=0.2)
+#+end_src
+
+** Learning Curve Display
+#+begin_src python :results graphics file :file ../img/learn10_plot1.png
+from sklearn.model_selection import LearningCurveDisplay
+import matplotlib.pyplot as plt
+
+plt.clf()
+display = LearningCurveDisplay.from_estimator(
+    regressor,
+    X,
+    y,
+    train_sizes = train_sizes,
+    cv=cv,
+    score_type="both",
+    scoring="neg_mean_absolute_error",
+    negate_score=True,
+    score_name="Mean Absolute Error (k$)",
+    std_display_style="errorbar",
+    n_jobs=2,
+)
+display.ax_.set(xscale="log", title="Learning curve for decision tree")
+plt.gcf()
+#+end_src

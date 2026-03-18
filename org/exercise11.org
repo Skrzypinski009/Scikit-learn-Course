@@ -1,0 +1,332 @@
+#+PROPERTY: header-args:python :session exercise11 :async
+* Exercise
+
+** Set up (only numerical)
+#+begin_src python
+import pandas as pd
+
+adult_census = pd.read_csv("../datasets/adult_census.csv")
+target = adult_census["class"].map({"<=50K": 0, ">50K": 1})
+data = adult_census.select_dtypes(["integer", "floating"])
+data = data.drop(columns=["education-num"])
+data
+#+end_src
+
+#+RESULTS:
+#+begin_example
+       age    fnlwgt  capital-gain  capital-loss  hours-per-week
+0       25  226802.0           0.0           0.0              40
+1       38   89814.0           0.0           0.0              50
+2       28  336951.0           0.0           0.0              40
+3       44  160323.0        7688.0           0.0              40
+4       18  103497.0           0.0           0.0              30
+...    ...       ...           ...           ...             ...
+48837   27  257302.0           0.0           0.0              38
+48838   40  154374.0           0.0           0.0              40
+48839   58  151910.0           0.0           0.0              40
+48840   22  201490.0           0.0           0.0              20
+48841   52  287927.0       15024.0           0.0              40
+
+[48842 rows x 5 columns]
+#+end_example
+
+** LogisticRegression with StandardScaler
+#+begin_src python
+from sklearn.pipeline import make_pipeline
+from sklearn.preprocessing import StandardScaler
+from sklearn.linear_model import LogisticRegression
+
+model = make_pipeline(
+    StandardScaler(),
+    LogisticRegression(),
+)
+#+end_src
+
+#+RESULTS:
+: None
+
+** Cross validation
+#+begin_src python
+from sklearn.model_selection import cross_validate
+
+cv_results = cross_validate(
+    model, data, target,
+    cv=10,
+    return_estimator=True,
+)
+scores = cv_results['test_score']
+cv_results
+#+end_src
+
+#+RESULTS:
+#+begin_example
+{'fit_time': array([0.04034162, 0.03478003, 0.03471041, 0.03479719, 0.03788328,
+       0.04454112, 0.04446077, 0.04414225, 0.03475332, 0.03620386]), 'score_time': array([0.00326538, 0.00274825, 0.0026989 , 0.00270534, 0.00319171,
+       0.00365925, 0.00315905, 0.00280356, 0.00271964, 0.00277138]), 'estimator': [Pipeline(steps=[('standardscaler', StandardScaler()),
+                ('logisticregression', LogisticRegression())]), Pipeline(steps=[('standardscaler', StandardScaler()),
+                ('logisticregression', LogisticRegression())]), Pipeline(steps=[('standardscaler', StandardScaler()),
+                ('logisticregression', LogisticRegression())]), Pipeline(steps=[('standardscaler', StandardScaler()),
+                ('logisticregression', LogisticRegression())]), Pipeline(steps=[('standardscaler', StandardScaler()),
+                ('logisticregression', LogisticRegression())]), Pipeline(steps=[('standardscaler', StandardScaler()),
+                ('logisticregression', LogisticRegression())]), Pipeline(steps=[('standardscaler', StandardScaler()),
+                ('logisticregression', LogisticRegression())]), Pipeline(steps=[('standardscaler', StandardScaler()),
+                ('logisticregression', LogisticRegression())]), Pipeline(steps=[('standardscaler', StandardScaler()),
+                ('logisticregression', LogisticRegression())]), Pipeline(steps=[('standardscaler', StandardScaler()),
+                ('logisticregression', LogisticRegression())])], 'test_score': array([0.79856704, 0.79222108, 0.7964783 , 0.80487305, 0.80118755,
+       0.79914005, 0.79832105, 0.7985258 , 0.80528256, 0.8034398 ])}
+#+end_example
+
+** Coefficients
+#+begin_src python
+coefs = [est.steps[-1][-1].coef_.flatten() for est in cv_results['estimator']]
+coef_df = pd.DataFrame(coefs, columns=data.columns).abs()
+coef_df
+#+end_src
+
+#+RESULTS:
+#+begin_example
+        age    fnlwgt  capital-gain  capital-loss  hours-per-week
+0  0.525471  0.041497      2.470972      0.306276        0.541854
+1  0.529454  0.038598      2.410960      0.308356        0.543729
+2  0.528015  0.042739      2.460979      0.308413        0.545930
+3  0.523817  0.041992      2.455612      0.309377        0.536674
+4  0.523745  0.047752      2.514270      0.304328        0.548512
+5  0.524882  0.038185      2.445662      0.304152        0.543163
+6  0.523709  0.041123      2.479022      0.306974        0.538480
+7  0.527365  0.039762      2.450476      0.308420        0.540197
+8  0.519971  0.040930      2.409994      0.308614        0.536935
+9  0.520297  0.042936      2.455122      0.301625        0.537549
+#+end_example
+
+#+begin_src python :results graphics file :file ../img/exercise11_plot2.png
+plt.clf()
+coef_df.boxplot()
+plt.gcf()
+#+end_src
+
+#+RESULTS:
+[[file:../img/exercise11_plot2.png]]
+
+** Set up (all data)
+#+begin_src python
+adult_census = pd.read_csv("../datasets/adult_census.csv")
+target = adult_census["class"]
+data = adult_census.drop(columns=["class", "education-num"])
+#+end_src
+
+** Preprocessor
+ * OneHotEncoder for categorical data
+ * StandardScaler for numerical data
+
+#+begin_src python
+from sklearn.preprocessing import OneHotEncoder, StandardScaler
+from sklearn.compose import make_column_transformer
+from sklearn.compose import make_column_selector as selector
+
+categorical_preprocessor = OneHotEncoder(
+    min_frequency=0.01,
+    handle_unknown="ignore",
+    sparse_output=False,
+)
+numerical_preprocessor = StandardScaler()
+
+categorical_selector = selector(dtype_include=object)
+categorical_columns = categorical_selector(data)
+
+numerical_selector = selector(dtype_exclude=object)
+numerical_columns = numerical_selector(data)
+
+preprocessor = make_column_transformer(
+    (categorical_preprocessor, categorical_columns),
+    (numerical_preprocessor, numerical_columns),
+)
+#+end_src
+
+#+RESULTS:
+: None
+
+** Creating model
+#+begin_src python
+from sklearn.pipeline import make_pipeline
+from sklearn.linear_model import LogisticRegression
+
+model = make_pipeline(
+    preprocessor,
+    LogisticRegression()
+).set_output(transform="pandas")
+
+#+end_src
+
+#+RESULTS:
+: None
+
+** Cross validation
+#+begin_src python
+cv_results = cross_validate(
+    model, data, target,
+    cv=10,
+    return_estimator=True,
+)
+cv_results
+#+end_src
+
+#+begin_src python
+scores2 = cv_results['test_score']
+scores2
+#+end_src
+
+#+RESULTS:
+: array([0.85404299, 0.85199591, 0.8499181 , 0.8486896 , 0.85012285,
+:        0.8482801 , 0.8544226 , 0.84930385, 0.86158886, 0.8519656 ])
+
+** Comparing results of models
+#+begin_src python :results graphics file :file ../img/exercise11_plot3.png
+import numpy as np
+import matplotlib.pyplot as plt
+x = np.arange(1,11)
+
+plt.clf()
+plt.scatter(x, scores)
+plt.scatter(x, scores2, c='red')
+plt.gcf()
+#+end_src
+
+#+RESULTS:
+[[file:../img/exercise11_plot3.png]]
+
+** OneHotEncoder feature names
+#+begin_src python
+preprocessor.fit(data)
+feature_names = (
+    preprocessor.named_transformers_["onehotencoder"].get_feature_names_out(
+        categorical_columns
+    )
+).tolist()
+feature_names += numerical_columns
+feature_names
+#+end_src
+
+#+RESULTS:
+| workclass_Federal-gov | workclass_Local-gov | workclass_Private | workclass_Self-emp-inc | workclass_Self-emp-not-inc | workclass_State-gov | workclass_nan | workclass_infrequent_sklearn | education_10th | education_11th | education_12th | education_5th-6th | education_7th-8th | education_9th | education_Assoc-acdm | education_Assoc-voc | education_Bachelors | education_Doctorate | education_HS-grad | education_Masters | education_Prof-school | education_Some-college | education_infrequent_sklearn | marital-status_Divorced | marital-status_Married-civ-spouse | marital-status_Married-spouse-absent | marital-status_Never-married | marital-status_Separated | marital-status_Widowed | marital-status_infrequent_sklearn | occupation_Adm-clerical | occupation_Craft-repair | occupation_Exec-managerial | occupation_Farming-fishing | occupation_Handlers-cleaners | occupation_Machine-op-inspct | occupation_Other-service | occupation_Prof-specialty | occupation_Protective-serv | occupation_Sales | occupation_Tech-support | occupation_Transport-moving | occupation_nan | occupation_infrequent_sklearn | relationship_Husband | relationship_Not-in-family | relationship_Other-relative | relationship_Own-child | relationship_Unmarried | relationship_Wife | race_Asian-Pac-Islander | race_Black | race_White | race_infrequent_sklearn | sex_Female | sex_Male | native-country_Mexico | native-country_United-States | native-country_nan | native-country_infrequent_sklearn | age | fnlwgt | capital-gain | capital-loss | hours-per-week |
+
+** Coeficients
+#+begin_src python
+coefs = [est.steps[-1][-1].coef_.flatten() for est in cv_results['estimator']]
+#+end_src
+
+#+begin_src python
+coef_df = pd.DataFrame(coefs, columns=feature_names)
+coef_df
+#+end_src
+
+#+RESULTS:
+#+begin_example
+   workclass_Federal-gov  workclass_Local-gov  ...  capital-loss  hours-per-week
+0               0.515613            -0.189790  ...      0.257254        0.355658
+1               0.471715            -0.152232  ...      0.259938        0.356388
+2               0.484831            -0.171806  ...      0.260926        0.359347
+3               0.476275            -0.144964  ...      0.259113        0.352670
+4               0.509017            -0.150830  ...      0.263770        0.360164
+5               0.495910            -0.185396  ...      0.253394        0.360928
+6               0.501292            -0.176861  ...      0.256304        0.354658
+7               0.454187            -0.157141  ...      0.262095        0.351166
+8               0.476206            -0.158060  ...      0.263809        0.352496
+9               0.448898            -0.203211  ...      0.256176        0.352714
+
+[10 rows x 65 columns]
+#+end_example
+
+#+begin_src python
+weights = coef_df.mean().abs()
+weights
+#+end_src
+
+#+RESULTS:
+#+begin_example
+workclass_Federal-gov         0.483394
+workclass_Local-gov           0.169029
+workclass_Private             0.023121
+workclass_Self-emp-inc        0.122098
+workclass_Self-emp-not-inc    0.563588
+                                ...
+age                           0.343151
+fnlwgt                        0.077718
+capital-gain                  2.342459
+capital-loss                  0.259278
+hours-per-week                0.355619
+Length: 65, dtype: float64
+#+end_example
+
+#+begin_src python :results graphics file :file ../img/exercise11_plot4.png
+plt.clf()
+weights.plot.barh()
+plt.gcf()
+#+end_src
+
+#+RESULTS:
+[[file:../img/exercise11_plot4.png]]
+
+#+begin_src python :results graphics file :file ../img/exercise11_plot5.png
+plt.clf()
+best = weights[weights > 1.2]
+best.plot.barh()
+plt.gcf()
+#+end_src
+
+#+RESULTS:
+[[file:../img/exercise11_plot5.png]]
+
+
+#+begin_src python
+best.index
+#+end_src
+
+#+RESULTS:
+: Index(['education_7th-8th', 'education_Doctorate', 'education_Masters',
+:        'education_Prof-school', 'education_infrequent_sklearn',
+:        'marital-status_Married-civ-spouse', 'capital-gain'],
+:       dtype='str')
+
+** LogisticRegressor with the same preprocessor and PolynomialFeatures
+#+begin_src python
+from sklearn.preprocessing import PolynomialFeatures
+
+model = make_pipeline(
+    preprocessor,
+    PolynomialFeatures(degree=2, interaction_only=True, include_bias=False),
+    LogisticRegression(C=0.01),
+).set_output(transform="pandas")
+model
+#+end_src
+
+** Cross validation
+#+begin_src python
+cv_results = cross_validate(
+    model, data, target,
+    cv=10,
+    return_estimator=False,
+)
+scores3 = cv_results['test_score']
+cv_results
+#+end_src
+
+** Comparing all models
+#+begin_src python :results graphics file :file ../img/exercise11_plot6.png
+x = np.arange(1,11)
+
+plt.clf()
+plt.scatter(x, scores)
+plt.scatter(x, scores2, c='red')
+plt.scatter(x, scores3, c='green')
+plt.gcf()
+#+end_src
+
+#+RESULTS:
+[[file:../img/exercise11_plot6.png]]
+
+#+begin_src python
+(scores2 < scores3).sum()
+#+end_src
+
+#+RESULTS:
+: 8
